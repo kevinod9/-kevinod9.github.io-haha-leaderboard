@@ -189,6 +189,8 @@
     justify-content: center;
     margin-bottom: 24px;
     gap: 0;
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
 
   .toggle-btn {
@@ -270,6 +272,9 @@
     <button class="toggle-btn" data-mode="hahas">Total HaHas</button>
     <button class="toggle-btn" data-mode="given">HaHas Given</button>
     <button class="toggle-btn" data-mode="ratio">Received:Given</button>
+    <button class="toggle-btn" data-mode="five">5+ HaHas</button>
+    <button class="toggle-btn" data-mode="seven">7+ HaHas</button>
+    <button class="toggle-btn" data-mode="ten">10+ HaHas</button>
   </div>
 
   <div class="header-row" id="header-row">
@@ -328,10 +333,32 @@ const givenData = {
   "+16179329461": 1,
 };
 
-// Add given count and ratio to each person
+// Messages with 5+, 7+, 10+ HaHas (keyed by id)
+const milestoneData = {
+  "+19088685354": [27, 1, 0],
+  "Me":           [16, 1, 0],
+  "+19088388294": [11, 3, 1],
+  "+19083476087": [11, 1, 0],
+  "+19083779132": [8, 1, 0],
+  "+19084878348": [7, 2, 0],
+  "+13025886213": [7, 2, 1],
+  "+19084779562": [5, 0, 0],
+  "+19083778438": [4, 1, 0],
+  "+19083778217": [4, 0, 0],
+  "+19089671818": [3, 2, 1],
+  "+19084999507": [3, 0, 0],
+  "+19084472652": [2, 0, 0],
+  "+19083007706": [1, 0, 0],
+};
+
+// Add given count, ratio, and milestone counts to each person
 data.forEach(p => {
   p.given = givenData[p.id] || 0;
   p.ratio = p.given > 0 ? p.hahas / p.given : 0;
+  const m = milestoneData[p.id] || [0, 0, 0];
+  p.five = m[0];
+  p.seven = m[1];
+  p.ten = m[2];
 });
 
 const medals = ["&#x1F947;", "&#x1F948;", "&#x1F949;"];
@@ -354,17 +381,17 @@ function render() {
   lb.innerHTML = "";
 
   // Update header
-  const labels = { rate: "HaHa Rate", hahas: "Total HaHas", given: "HaHas Given", ratio: "Received:Given" };
+  const labels = { rate: "HaHa Rate", hahas: "Total HaHas", given: "HaHas Given", ratio: "Received:Given", five: "5+ HaHas", seven: "7+ HaHas", ten: "10+ HaHas" };
   document.getElementById("sort-label").textContent = labels[currentMode];
 
   sorted.forEach((p, i) => {
     const rank = i + 1;
     const val = p[sortKey];
-    const rateClass = (currentMode === "given")
-      ? (val > 1000 ? "rate-high" : val > 400 ? "rate-mid" : "rate-low")
-      : (currentMode === "ratio")
-      ? (val > 1.5 ? "rate-high" : val > 0.8 ? "rate-mid" : "rate-low")
-      : (p.rate > 0.12 ? "rate-high" : p.rate > 0.06 ? "rate-mid" : "rate-low");
+    let rateClass;
+    if (currentMode === "given") rateClass = val > 1000 ? "rate-high" : val > 400 ? "rate-mid" : "rate-low";
+    else if (currentMode === "ratio") rateClass = val > 1.5 ? "rate-high" : val > 0.8 ? "rate-mid" : "rate-low";
+    else if (["five","seven","ten"].includes(currentMode)) rateClass = val > 7 ? "rate-high" : val > 2 ? "rate-mid" : "rate-low";
+    else rateClass = p.rate > 0.12 ? "rate-high" : p.rate > 0.06 ? "rate-mid" : "rate-low";
     const rankClass = rank <= 3 ? `top-3 rank-${rank}` : "";
     const barWidth = maxVal > 0 ? (val / maxVal * 100).toFixed(1) : 0;
     const medal = rank <= 3 ? `<span class="medal">${medals[i]}</span>` : "";
@@ -374,7 +401,8 @@ function render() {
     if (currentMode === "rate") valueDisplay = (p.rate * 100).toFixed(1) + "%";
     else if (currentMode === "hahas") valueDisplay = p.hahas.toLocaleString();
     else if (currentMode === "given") valueDisplay = p.given.toLocaleString();
-    else valueDisplay = p.ratio.toFixed(2) + "x";
+    else if (currentMode === "ratio") valueDisplay = p.ratio.toFixed(2) + "x";
+    else valueDisplay = val.toLocaleString();
 
     lb.innerHTML += `
       <div class="row ${rankClass}">
